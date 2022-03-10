@@ -23,11 +23,21 @@ namespace Infraestructure.Repository
         {
             try
             {
+                int id;
+                Activo lastActivo = Read().LastOrDefault();
+                if (lastActivo == null)
+                {
+                    id = 1;
+                }
+                else
+                {
+                    id = lastActivo.Id + 1;
+                }
                 using (FileStream fileStream = new FileStream(fileName, FileMode.Append, FileAccess.Write))
                 {
                     //binaryWriter = new StreamWriter(fileStream);
                     binaryWriter = new BinaryWriter(fileStream);
-                    binaryWriter.Write(t.Id);
+                    binaryWriter.Write(id);
                     binaryWriter.Write(t.Nombre);
                     binaryWriter.Write(t.Valor);
                     binaryWriter.Write(t.VidaUtil);
@@ -50,7 +60,42 @@ namespace Infraestructure.Repository
 
         public Activo GetById(int id)
         {
-            throw new NotImplementedException();
+            Activo activo = null;
+            try
+            {
+                using (FileStream fileStream = new FileStream(fileName, FileMode.OpenOrCreate, FileAccess.Read))
+                {
+                    binaryReader = new BinaryReader(fileStream);
+                    long length = binaryReader.BaseStream.Length;
+                    if (length <= 0)
+                    {
+                        return activo;
+                    }
+                    binaryReader.BaseStream.Seek(0, SeekOrigin.Begin);
+                    //BinaryReader br = new BinaryReader(binaryReader.BaseStream);
+                    //while(!(binaryReader.BaseStream.Position <length))
+                    while (binaryReader.BaseStream.Position < length)
+                    {
+                        activo = new Activo()
+                        {
+                            Id = binaryReader.ReadInt32(),
+                            Nombre = binaryReader.ReadString(),
+                            Valor = binaryReader.ReadDouble(),
+                            VidaUtil = binaryReader.ReadInt32(),
+                            ValorResidual = binaryReader.ReadDouble()
+                        };
+                        if (activo.Id == id)
+                        {
+                            break;
+                        }
+                    }
+                }
+                return activo;
+            }
+            catch (IOException)
+            {
+                throw;
+            }
         }
 
         public List<Activo> Read()
@@ -62,7 +107,7 @@ namespace Infraestructure.Repository
                 {
                     binaryReader = new BinaryReader(fileStream);
                     long length = binaryReader.BaseStream.Length;
-                    if (length < 0)
+                    if (length <= 0)
                     {
                         return activos;
                     }
